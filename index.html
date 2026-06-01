@@ -1,0 +1,1316 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Planning Architecture Calculator v9 | Bilingual Landscape Dashboard</title>
+  <meta name="description" content="Web app tính toán các chỉ tiêu quy hoạch kiến trúc: diện tích đất, FAR, mật độ xây dựng, số tầng, chiều cao, khoảng lùi, diện tích xây dựng, GFA, diện tích sàn trung bình và kiểm tra sơ bộ." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --surface-2: #f0f3f8;
+      --text: #172033;
+      --muted: #667085;
+      --border: #d9e0ea;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --danger: #b42318;
+      --warning: #b54708;
+      --success: #027a48;
+      --shadow: 0 18px 45px rgba(22, 34, 51, 0.10);
+      --radius: 22px;
+      --radius-sm: 14px;
+      --gap: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Roboto", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.13), transparent 30%),
+        linear-gradient(180deg, #fbfcff 0%, var(--bg) 42%, #eef3f8 100%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .app { max-width: 1280px; margin: 0 auto; padding: 32px 18px 56px; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: var(--gap);
+      align-items: stretch;
+      margin-bottom: 20px;
+    }
+
+    .hero-card, .panel, .metric-card, .status-card {
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(217, 224, 234, 0.9);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    .hero-card { padding: 28px; position: relative; overflow: hidden; }
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -60px -90px auto;
+      width: 240px;
+      height: 240px;
+      background: radial-gradient(circle, rgba(15,118,110,0.16), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      background: rgba(15, 118, 110, 0.09);
+      color: var(--primary-dark);
+      border: 1px solid rgba(15, 118, 110, 0.16);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    h1 { font-size: clamp(30px, 5vw, 56px); line-height: 1.02; margin: 18px 0 12px; letter-spacing: -0.045em; }
+    .lead { font-size: 17px; color: var(--muted); max-width: 820px; margin: 0 0 22px; }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+
+    button, .file-label {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 13px;
+      padding: 11px 14px;
+      font-weight: 750;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      user-select: none;
+    }
+    button:active, .file-label:active { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 10px 22px rgba(15,118,110,.22); }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #fff; color: var(--text); border-color: var(--border); }
+    .btn-secondary:hover { background: var(--surface-2); }
+    .btn-danger { background: #fff4f2; color: var(--danger); border-color: #fecdca; }
+
+    .language-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 13px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .language-switch select {
+      width: auto;
+      min-width: 112px;
+      padding: 5px 8px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    input[type="file"] { display: none; }
+
+    .summary-box { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+    .summary-title { font-weight: 850; font-size: 18px; margin: 0; }
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mini-stat { background: var(--surface-2); padding: 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .mini-stat span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 3px; }
+    .mini-stat strong { font-size: 20px; }
+
+    .layout { display: grid; grid-template-columns: minmax(320px, 430px) minmax(0, 1fr); gap: var(--gap); align-items: start; }
+    .panel { padding: 20px; }
+    .panel h2 { margin: 0 0 14px; font-size: 21px; letter-spacing: -0.02em; }
+    .panel-desc { color: var(--muted); font-size: 14px; margin: -8px 0 18px; }
+
+    .form-section { border-top: 1px solid var(--border); padding-top: 18px; margin-top: 18px; }
+    .form-section:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+    .form-section h3 { margin: 0 0 12px; font-size: 15px; color: #344054; text-transform: uppercase; letter-spacing: .08em; }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: 13px; font-weight: 750; color: #344054; }
+    /* Required input labels: always visible in red with a red asterisk.
+       Use both a class and panel selector so the rule survives browser/cache/style conflicts. */
+    .input-panel .field > label,
+    .input-panel label.required-input-label {
+      color: #d92d20 !important;
+      font-weight: 900 !important;
+    }
+    .input-panel .field > label::after,
+    .input-panel label.required-input-label::after {
+      content: " *";
+      font-weight: 900;
+      color: #d92d20 !important;
+    }
+    .input-panel .field > input,
+    .input-panel .field > select,
+    .input-panel .field > textarea {
+      border-color: rgba(217, 45, 32, .35);
+    }
+    .required-note {
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 750;
+      margin: -6px 0 16px;
+    }
+
+    /* V3 FIX: force every required input label red even outside .input-panel */
+    label.required-input-label,
+    .field label.required-input-label {
+      color: #d92d20 !important;
+      font-weight: 900 !important;
+    }
+    label.required-input-label::after,
+    .field label.required-input-label::after {
+      content: " *" !important;
+      color: #d92d20 !important;
+      font-weight: 900 !important;
+    }
+    .field:has(label.required-input-label) input,
+    .field:has(label.required-input-label) select,
+    .field:has(label.required-input-label) textarea {
+      border-color: rgba(217, 45, 32, .55) !important;
+      background: #fffafa;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 12px;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border .15s ease, box-shadow .15s ease;
+    }
+    textarea { min-height: 86px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(15,118,110,.55); box-shadow: 0 0 0 4px rgba(15,118,110,.10); }
+    .hint { color: var(--muted); font-size: 12px; }
+
+    .results { display: flex; flex-direction: column; gap: var(--gap); }
+    .metrics-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .metric-card { padding: 18px; box-shadow: 0 12px 32px rgba(22,34,51,.07); }
+    .metric-card .label { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+    .metric-card .value { font-size: clamp(22px, 2.6vw, 34px); font-weight: 900; letter-spacing: -0.04em; }
+    .metric-card .sub { color: var(--muted); font-size: 12px; margin-top: 5px; }
+
+    .status-card { padding: 18px; box-shadow: 0 12px 32px rgba(22,34,51,.07); }
+    .status-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .badge { border-radius: 999px; padding: 6px 10px; font-weight: 800; font-size: 12px; }
+    .badge.success { color: var(--success); background: #ecfdf3; border: 1px solid #abefc6; }
+    .badge.warning { color: var(--warning); background: #fffaeb; border: 1px solid #fedf89; }
+    .badge.danger { color: var(--danger); background: #fff1f3; border: 1px solid #fecdd6; }
+    .check-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+    .check-list li { padding: 11px 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; color: #344054; }
+    .check-list strong { color: var(--text); }
+
+    .viz { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .diagram { min-height: 300px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .diagram-title { font-size: 14px; font-weight: 850; margin-bottom: 8px; color: #344054; }
+    .site-box { height: 230px; border: 2px dashed #98a2b3; border-radius: 16px; position: relative; background: linear-gradient(135deg, #f8fafc 0%, #eef4f3 100%); }
+    .build-box { position: absolute; background: rgba(15,118,110,.72); border: 2px solid var(--primary-dark); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; text-align: center; padding: 8px; min-width: 40px; min-height: 36px; }
+    .setback-label { position: absolute; font-size: 11px; color: #475467; background: rgba(255,255,255,.85); padding: 3px 6px; border-radius: 999px; border: 1px solid var(--border); }
+    .diagram-help { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .import-status { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--border); color: #475467; font-size: 13px; }
+    .diagram-svg { width: 100%; height: 230px; display: block; background: linear-gradient(135deg, #f8fafc 0%, #eef4f3 100%); border: 2px dashed #98a2b3; border-radius: 16px; overflow: visible; }
+    .svg-boundary-fit-bg { fill: rgba(255,255,255,.35); stroke: none; }
+    .svg-site { fill: rgba(15,118,110,.07); stroke: #344054; stroke-width: 4.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+    .svg-setback { fill: rgba(217,45,32,.08); stroke: #d92d20; stroke-width: 2.2; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+    .svg-building { fill: rgba(15,118,110,.72); stroke: #115e59; stroke-width: 2.4; vector-effect: non-scaling-stroke; }
+    .svg-label { font: 700 11px Roboto, system-ui, sans-serif; fill: #344054; paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 3px; }
+    .bar-row { display: grid; grid-template-columns: 110px 1fr 80px; gap: 10px; align-items: center; margin: 13px 0; font-size: 13px; }
+    .bar-track { height: 12px; background: #edf2f7; border-radius: 999px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--primary); border-radius: 999px; width: 0%; transition: width .2s ease; }
+
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: var(--radius-sm); }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 14px; }
+    th { background: #f8fafc; color: #344054; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    tr:last-child td { border-bottom: 0; }
+    .formula { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; color: #475467; }
+
+    .footer-note { color: var(--muted); font-size: 13px; margin-top: 16px; }
+
+    @media (max-width: 980px) {
+      .hero, .layout, .viz { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+    @media (max-width: 620px) {
+      .app { padding: 18px 12px 36px; }
+      .hero-card, .panel, .summary-box { padding: 18px; }
+      .field-grid, .metrics-grid, .summary-grid { grid-template-columns: 1fr; }
+      .toolbar { flex-direction: column; }
+      button, .file-label { width: 100%; }
+      .bar-row { grid-template-columns: 1fr; gap: 6px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .toolbar, .input-panel { display: none !important; }
+      .app { max-width: 100%; padding: 0; }
+      .hero, .layout { display: block; }
+      .hero-card, .panel, .metric-card, .status-card { box-shadow: none; border-color: #ccc; page-break-inside: avoid; }
+      .results { margin-top: 18px; }
+    }
+  
+
+    /* =====================================================
+       V7 LANDSCAPE ONE-PAGE DASHBOARD MODE
+       Goal: keep the whole web app inside one landscape screen.
+       Long content scrolls inside its own card instead of scrolling the page.
+    ===================================================== */
+    @media (min-width: 1024px) and (orientation: landscape) {
+      :root {
+        --gap: 10px;
+        --radius: 16px;
+        --radius-sm: 10px;
+        --shadow: 0 8px 24px rgba(22, 34, 51, 0.08);
+      }
+
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        line-height: 1.28;
+        background: linear-gradient(135deg, #f7f9fc 0%, #eef3f8 100%);
+      }
+
+      .app {
+        width: 100vw;
+        max-width: none;
+        height: 100vh;
+        margin: 0;
+        padding: 10px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: var(--gap);
+        overflow: hidden;
+      }
+
+      .hero {
+        margin: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(360px, .7fr);
+        gap: var(--gap);
+        min-height: 0;
+      }
+
+      .hero-card,
+      .panel,
+      .metric-card,
+      .status-card {
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      .hero-card {
+        padding: 12px 14px;
+      }
+
+      .hero-card::after { display: none; }
+      .eyebrow { padding: 5px 9px; font-size: 11px; }
+      h1 { font-size: clamp(20px, 2vw, 30px); line-height: 1.05; margin: 8px 0 6px; letter-spacing: -0.035em; }
+      .lead { display: none; }
+      .toolbar { margin-top: 8px; gap: 6px; }
+
+      button, .file-label {
+        min-height: 0;
+        padding: 7px 9px;
+        border-radius: 10px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .summary-box {
+        padding: 10px;
+        gap: 8px;
+      }
+
+      .summary-title { font-size: 14px; }
+      .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+      .mini-stat { padding: 7px; border-radius: 10px; }
+      .mini-stat span { font-size: 10px; margin-bottom: 2px; }
+      .mini-stat strong { font-size: 14px; }
+      .footer-note { display: none; }
+
+      .layout {
+        height: 100%;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: clamp(310px, 25vw, 390px) minmax(0, 1fr);
+        gap: var(--gap);
+        align-items: stretch;
+        overflow: hidden;
+      }
+
+      .panel { padding: 10px; }
+      .panel h2 { font-size: 15px; margin: 0 0 8px; }
+      .panel-desc { display: none; }
+      .required-note { font-size: 11px; margin: 0 0 8px; }
+
+      .input-panel {
+        height: 100%;
+        min-height: 0;
+        overflow: auto;
+        scrollbar-width: thin;
+      }
+
+      .form-section { padding-top: 9px; margin-top: 9px; }
+      .form-section h3 { font-size: 11px; margin-bottom: 7px; letter-spacing: .06em; }
+      .field-grid { gap: 7px; }
+      .field { gap: 4px; }
+      label { font-size: 11px; }
+      input, select, textarea { padding: 7px 8px; border-radius: 9px; font-size: 12px; }
+      textarea { min-height: 44px; }
+      .hint { font-size: 10px; }
+      .input-panel .toolbar { position: sticky; bottom: 0; background: rgba(255,255,255,.94); padding-top: 8px; backdrop-filter: blur(8px); }
+
+      .results {
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(320px, .85fr);
+        grid-template-rows: auto minmax(0, 1fr) minmax(128px, .45fr);
+        gap: var(--gap);
+      }
+
+      .metrics-grid {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .metric-card { padding: 9px; border-radius: 12px; }
+      .metric-card .label { font-size: 10px; margin-bottom: 3px; }
+      .metric-card .value { font-size: clamp(16px, 1.55vw, 22px); line-height: 1.05; }
+      .metric-card .sub { font-size: 10px; margin-top: 3px; }
+
+      .viz {
+        grid-column: 1;
+        grid-row: 2;
+        min-height: 0;
+        height: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(220px, .8fr);
+        gap: var(--gap);
+      }
+
+      .diagram {
+        min-height: 0;
+        height: 100%;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .diagram-title { font-size: 12px; margin-bottom: 6px; }
+      .diagram-help, .import-status { font-size: 10.5px; margin-top: 6px; padding: 6px 8px; }
+      .site-box,
+      .diagram-svg {
+        height: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+        border-radius: 12px;
+      }
+
+      .svg-site { stroke-width: 3.8; }
+      .svg-setback { stroke-width: 2; }
+
+      .bar-row {
+        grid-template-columns: 78px 1fr 54px;
+        gap: 6px;
+        margin: 8px 0;
+        font-size: 11px;
+      }
+      .bar-track { height: 9px; }
+
+      .status-card {
+        grid-column: 2;
+        grid-row: 2;
+        min-height: 0;
+        overflow: auto;
+        padding: 10px;
+      }
+      .status-header { margin-bottom: 8px; }
+      .status-header h2 { font-size: 15px; }
+      .badge { padding: 4px 8px; font-size: 10px; }
+      .check-list { gap: 6px; }
+      .check-list li { padding: 7px 8px; border-radius: 9px; font-size: 11px; }
+
+      .results > .panel {
+        min-height: 0;
+        overflow: auto;
+      }
+      .results > .panel:nth-last-child(2) {
+        grid-column: 1;
+        grid-row: 3;
+      }
+      .results > .panel:last-child {
+        grid-column: 2;
+        grid-row: 3;
+      }
+
+      table { font-size: 10.5px; }
+      th, td { padding: 6px 7px; }
+      #reportText { font-size: 11px; }
+    }
+
+    @media (min-width: 1400px) and (orientation: landscape) {
+      .layout { grid-template-columns: clamp(340px, 23vw, 430px) minmax(0, 1fr); }
+      .results { grid-template-columns: minmax(0, 1.55fr) minmax(360px, .8fr); }
+      .diagram-title { font-size: 13px; }
+    }
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow" data-i18n="eyebrow">🏙️ Planning Architecture Calculator</div>
+        <h1 data-i18n="mainTitle">Tính toán Chỉ tiêu Quy hoạch Kiến trúc</h1>
+        <p class="lead" data-i18n="lead">Nhập diện tích đất, hệ số sử dụng đất, mật độ xây dựng, số tầng, chiều cao và khoảng lùi để tự động tính: diện tích xây dựng tối đa, tổng diện tích sàn, diện tích sàn trung bình, chiều cao tầng, diện tích mở, cảnh báo vượt chỉ tiêu và báo cáo sơ bộ.</p>
+        <div class="toolbar">
+          <button class="btn-primary" id="calculateBtn" data-i18n="calculateBtn">Tính toán lại</button>
+          <label class="language-switch"><span data-i18n="languageLabel">Ngôn ngữ</span><select id="languageSelect" aria-label="Language"><option value="vi">Tiếng Việt</option><option value="en">English</option></select></label>
+          <button class="btn-secondary" id="printBtn" data-i18n="printBtn">Export to PDF</button>
+          <button class="btn-secondary" id="exportJsonBtn" data-i18n="exportJsonBtn">Export Architectural Parameter</button>
+          <button class="btn-secondary" id="exportCsvBtn" data-i18n="exportCsvBtn">Export to CSV</button>
+          <label class="file-label btn-secondary" for="importFile" data-i18n="importJsonLabel">Import Architectural Parameter</label>
+          <input id="importFile" type="file" accept="application/json" />
+          <label class="file-label btn-secondary" for="diagramFile" data-i18n="loadBoundaryLabel">Load Site Boundary and Setback Line</label>
+          <input id="diagramFile" type="file" accept="application/json" />
+        </div>
+      </div>
+      <aside class="summary-box hero-card">
+        <p class="summary-title" data-i18n="quickSummary">Tóm tắt nhanh</p>
+        <div class="summary-grid">
+          <div class="mini-stat"><span data-i18n="landAreaShort">Diện tích đất</span><strong id="quickLand">—</strong></div>
+          <div class="mini-stat"><span data-i18n="maxGfaShort">GFA tối đa</span><strong id="quickGfa">—</strong></div>
+          <div class="mini-stat"><span data-i18n="maxFootprintShort">Footprint tối đa</span><strong id="quickFootprint">—</strong></div>
+          <div class="mini-stat"><span data-i18n="statusShort">Trạng thái</span><strong id="quickStatus">—</strong></div>
+        </div>
+        <p class="footer-note" data-i18n="footerNote">Lưu ý: công cụ này phục vụ tính toán sơ bộ. Khi nộp hồ sơ pháp lý, cần đối chiếu quy chuẩn, quy hoạch 1/500, chỉ giới đường đỏ, chỉ giới xây dựng và văn bản địa phương.</p>
+      </aside>
+    </section>
+
+    <section class="layout">
+      <aside class="panel input-panel">
+        <h2 data-i18n="inputTitle">Thông số đầu vào</h2>
+        <p class="panel-desc" data-i18n="inputDesc">Các giá trị được lưu tự động trong trình duyệt của bạn.</p>
+        <p class="required-note" data-i18n="requiredNote">* Các thông số màu đỏ là thông tin cần nhập / cần kiểm tra trước khi tính toán.</p>
+
+        <div class="form-section">
+          <h3 data-i18n="sectionProject">Dự án</h3>
+          <div class="field-grid">
+            <div class="field full">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="projectName" data-i18n="projectNameLabel">Tên dự án</label>
+              <input id="projectName" value="Dự án mẫu" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="landArea" data-i18n="landAreaLabel">Diện tích đất (m²)</label>
+              <input id="landArea" type="number" min="0" step="0.01" value="1000" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="landWidth" data-i18n="landWidthLabel">Chiều ngang khu đất (m)</label>
+              <input id="landWidth" type="number" min="0" step="0.01" value="25" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="landDepth" data-i18n="landDepthLabel">Chiều sâu khu đất (m)</label>
+              <input id="landDepth" type="number" min="0" step="0.01" value="40" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="roadWidth" data-i18n="roadWidthLabel">Lộ giới / bề rộng đường (m)</label>
+              <input id="roadWidth" type="number" min="0" step="0.01" value="20" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 data-i18n="sectionPlanning">Chỉ tiêu quy hoạch</h3>
+          <div class="field-grid">
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="far" data-i18n="farLabel">Hệ số sử dụng đất FAR</label>
+              <input id="far" type="number" min="0" step="0.01" value="5" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="density" data-i18n="densityLabel">Mật độ xây dựng (%)</label>
+              <input id="density" type="number" min="0" max="100" step="0.01" value="45" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="floors" data-i18n="floorsLabel">Số tầng nổi</label>
+              <input id="floors" type="number" min="1" step="1" value="12" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="basements" data-i18n="basementsLabel">Số tầng hầm</label>
+              <input id="basements" type="number" min="0" step="1" value="1" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="height" data-i18n="heightLabel">Chiều cao công trình (m)</label>
+              <input id="height" type="number" min="0" step="0.01" value="48" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="maxHeight" data-i18n="maxHeightLabel">Chiều cao khống chế (m)</label>
+              <input id="maxHeight" type="number" min="0" step="0.01" value="50" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 data-i18n="sectionSetback">Khoảng lùi</h3>
+          <div class="field-grid">
+            <div class="field"><label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="frontSetback" data-i18n="frontSetbackLabel">Trước (m)</label><input id="frontSetback" type="number" min="0" step="0.01" value="6" /></div>
+            <div class="field"><label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="rearSetback" data-i18n="rearSetbackLabel">Sau (m)</label><input id="rearSetback" type="number" min="0" step="0.01" value="4" /></div>
+            <div class="field"><label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="leftSetback" data-i18n="leftSetbackLabel">Trái (m)</label><input id="leftSetback" type="number" min="0" step="0.01" value="3" /></div>
+            <div class="field"><label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="rightSetback" data-i18n="rightSetbackLabel">Phải (m)</label><input id="rightSetback" type="number" min="0" step="0.01" value="3" /></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3 data-i18n="sectionProposal">Thiết kế đề xuất</h3>
+          <div class="field-grid">
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="proposedFootprint" data-i18n="proposedFootprintLabel">Footprint đề xuất (m²)</label>
+              <input id="proposedFootprint" type="number" min="0" step="0.01" value="420" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="proposedGfa" data-i18n="proposedGfaLabel">GFA đề xuất (m²)</label>
+              <input id="proposedGfa" type="number" min="0" step="0.01" value="4800" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="greenRatio" data-i18n="greenRatioLabel">Tỷ lệ cây xanh yêu cầu (%)</label>
+              <input id="greenRatio" type="number" min="0" max="100" step="0.01" value="20" />
+            </div>
+            <div class="field">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="parkingRatio" data-i18n="parkingRatioLabel">Đỗ xe / 100 m² GFA</label>
+              <input id="parkingRatio" type="number" min="0" step="0.01" value="1" />
+            </div>
+            <div class="field full">
+              <label class="required-input-label" style="color:#d92d20 !important;font-weight:900 !important;" for="notes" data-i18n="notesLabel">Ghi chú quy hoạch</label>
+              <textarea id="notes">Kiểm tra thêm chỉ giới xây dựng, phòng cháy chữa cháy, giao thông tiếp cận và quy định địa phương.</textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn-primary" id="saveBtn" data-i18n="saveBtn">Lưu thông số</button>
+          <button class="btn-danger" id="resetBtn" data-i18n="resetBtn">Reset mẫu</button>
+        </div>
+      </aside>
+
+      <section class="results">
+        <div class="metrics-grid" id="metricsGrid"></div>
+
+        <div class="viz">
+          <div class="diagram">
+            <div class="diagram-title" data-i18n="diagramTitle">Sơ đồ khu đất & khoảng lùi</div>
+            <div class="site-box" id="siteBox">
+              <div class="build-box" id="buildBox" data-i18n="buildingLabel">BUILDING</div>
+              <div class="setback-label" id="frontLabel">Trước</div>
+              <div class="setback-label" id="rearLabel">Sau</div>
+              <div class="setback-label" id="leftLabel">Trái</div>
+              <div class="setback-label" id="rightLabel">Phải</div>
+            </div>
+            <div class="diagram-help" id="diagramHelp">Dùng nút <strong>Load Site Boundary and Setback Line</strong> để nạp JSON SketchUp chứa <strong>site_boundaries</strong> và <strong>setback_lines</strong>.</div>
+          </div>
+          <div class="diagram">
+            <div class="diagram-title" data-i18n="usageTitle">Tỷ lệ sử dụng chỉ tiêu</div>
+            <div id="bars"></div>
+          </div>
+        </div>
+
+        <div class="status-card">
+          <div class="status-header">
+            <h2 style="margin:0" data-i18n="checkTitle">Kiểm tra sơ bộ</h2>
+            <span class="badge" id="statusBadge">—</span>
+          </div>
+          <ul class="check-list" id="checkList"></ul>
+        </div>
+
+        <div class="panel">
+          <h2 data-i18n="formulaTitle">Bảng công thức & kết quả</h2>
+          <div style="overflow:auto">
+            <table>
+              <thead><tr><th data-i18n="tableMetric">Chỉ tiêu</th><th data-i18n="tableFormula">Công thức</th><th data-i18n="tableResult">Kết quả</th></tr></thead>
+              <tbody id="formulaRows"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 data-i18n="reportTitle">Báo cáo nhanh</h2>
+          <div id="reportText"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const fieldIds = [
+      'projectName','landArea','landWidth','landDepth','roadWidth','far','density','floors','basements','height','maxHeight',
+      'frontSetback','rearSetback','leftSetback','rightSetback','proposedFootprint','proposedGfa','greenRatio','parkingRatio','notes'
+    ];
+
+    const defaultData = {
+      projectName: 'Dự án mẫu', landArea: 1000, landWidth: 25, landDepth: 40, roadWidth: 20, far: 5, density: 45,
+      floors: 12, basements: 1, height: 48, maxHeight: 50, frontSetback: 6, rearSetback: 4,
+      leftSetback: 3, rightSetback: 3, proposedFootprint: 420, proposedGfa: 4800, greenRatio: 20,
+      parkingRatio: 1, notes: 'Kiểm tra thêm chỉ giới xây dựng, phòng cháy chữa cháy, giao thông tiếp cận và quy định địa phương.'
+    };
+
+    let importedDiagram = null;
+    let currentLang = localStorage.getItem('planningCalculatorLanguage') || 'vi';
+
+    const translations = {
+      vi: {
+        calculateBtn:'Tính toán lại', languageLabel:'Ngôn ngữ', eyebrow:'🏙️ Planning Architecture Calculator', mainTitle:'Tính toán Chỉ tiêu Quy hoạch Kiến trúc',
+        lead:'Nhập diện tích đất, hệ số sử dụng đất, mật độ xây dựng, số tầng, chiều cao và khoảng lùi để tự động tính: diện tích xây dựng tối đa, tổng diện tích sàn, diện tích sàn trung bình, chiều cao tầng, diện tích mở, cảnh báo vượt chỉ tiêu và báo cáo sơ bộ.',
+        printBtn:'Export to PDF', exportJsonBtn:'Export Architectural Parameter', exportCsvBtn:'Export to CSV', importJsonLabel:'Import Architectural Parameter', loadBoundaryLabel:'Load Site Boundary and Setback Line',
+        quickSummary:'Tóm tắt nhanh', landAreaShort:'Diện tích đất', maxGfaShort:'GFA tối đa', maxFootprintShort:'Footprint tối đa', statusShort:'Trạng thái',
+        footerNote:'Lưu ý: công cụ này phục vụ tính toán sơ bộ. Khi nộp hồ sơ pháp lý, cần đối chiếu quy chuẩn, quy hoạch 1/500, chỉ giới đường đỏ, chỉ giới xây dựng và văn bản địa phương.',
+        inputTitle:'Thông số đầu vào', inputDesc:'Các giá trị được lưu tự động trong trình duyệt của bạn.', requiredNote:'* Các thông số màu đỏ là thông tin cần nhập / cần kiểm tra trước khi tính toán.',
+        sectionProject:'Dự án', sectionPlanning:'Chỉ tiêu quy hoạch', sectionSetback:'Khoảng lùi', sectionProposal:'Thiết kế đề xuất',
+        projectNameLabel:'Tên dự án', landAreaLabel:'Diện tích đất (m²)', landWidthLabel:'Chiều ngang khu đất (m)', landDepthLabel:'Chiều sâu khu đất (m)', roadWidthLabel:'Lộ giới / bề rộng đường (m)',
+        farLabel:'Hệ số sử dụng đất FAR', densityLabel:'Mật độ xây dựng (%)', floorsLabel:'Số tầng nổi', basementsLabel:'Số tầng hầm', heightLabel:'Chiều cao công trình (m)', maxHeightLabel:'Chiều cao khống chế (m)',
+        frontSetbackLabel:'Trước (m)', rearSetbackLabel:'Sau (m)', leftSetbackLabel:'Trái (m)', rightSetbackLabel:'Phải (m)',
+        proposedFootprintLabel:'Footprint đề xuất (m²)', proposedGfaLabel:'GFA đề xuất (m²)', greenRatioLabel:'Tỷ lệ cây xanh yêu cầu (%)', parkingRatioLabel:'Đỗ xe / 100 m² GFA', notesLabel:'Ghi chú quy hoạch',
+        saveBtn:'Lưu thông số', resetBtn:'Reset mẫu', diagramTitle:'Sơ đồ khu đất & khoảng lùi', buildingLabel:'BUILDING', usageTitle:'Tỷ lệ sử dụng chỉ tiêu',
+        checkTitle:'Kiểm tra sơ bộ', formulaTitle:'Bảng công thức & kết quả', tableMetric:'Chỉ tiêu', tableFormula:'Công thức', tableResult:'Kết quả', reportTitle:'Báo cáo nhanh',
+        siteDiagramHelp:'Dùng nút <strong>Load Site Boundary and Setback Line</strong> để nạp JSON SketchUp chứa <strong>site_boundaries</strong> và <strong>setback_lines</strong>.',
+        defaultDiagramHelp:'Đang hiển thị sơ đồ tự động từ chiều ngang, chiều sâu và khoảng lùi nhập tay.',
+        importedDiagramHelp:(b,s,hasFootprint)=>`Sơ đồ Site Boundary: <strong>${b}</strong> điểm boundary`,
+        front:'Trước', rear:'Sau', left:'Trái', right:'Phải',
+        okStatus:'Đạt sơ bộ', checkStatus:'Cần kiểm tra', failStatus:'Không đạt sơ bộ',
+        checkDensity:'Mật độ xây dựng', checkFar:'Hệ số sử dụng đất FAR', checkHeight:'Chiều cao công trình', checkSetback:'Footprint trong vùng xây dựng', checkGreen:'Không gian mở / cây xanh sơ bộ', checkDimension:'Kiểm tra kích thước khu đất',
+        limit:'giới hạn', effectiveLimit:'giới hạn hiệu dụng', remaining:'còn lại', greenRequired:'yêu cầu cây xanh', comparedToInput:'so với diện tích nhập',
+        maxGfa:'GFA tối đa', maxFootprint:'Footprint tối đa', effectiveFootprint:'Footprint hiệu dụng', proposedFar:'FAR đề xuất', proposedDensity:'Mật độ đề xuất', avgFloorHeight:'Chiều cao tầng TB', avgFloor:'Sàn TB / tầng', openSpace:'Không gian mở', parkingEstimate:'Đỗ xe ước tính',
+        landFarFormula:'Diện tích đất × FAR', densityFormula:'Diện tích đất × mật độ', setbackFormula:'Giới hạn bởi mật độ và khoảng lùi', proposedFarSub:'GFA đề xuất / diện tích đất', proposedDensitySub:'Footprint đề xuất / diện tích đất', heightFloorSub:'Chiều cao / số tầng nổi', gfaFloorSub:'GFA đề xuất / số tầng', openSpaceSub:'Diện tích đất - footprint', parkingSub:'Theo chỉ tiêu nhập',
+        formulaMaxFootprint:'Diện tích xây dựng tối đa', formulaMaxGfa:'Tổng diện tích sàn tối đa', formulaAvgByFar:'Diện tích sàn TB theo FAR', formulaProposedDensity:'Mật độ xây dựng đề xuất', formulaProposedFar:'FAR đề xuất', formulaEnvelope:'Vùng xây dựng sau khoảng lùi', formulaAvgHeight:'Chiều cao tầng trung bình', formulaOpenSpace:'Không gian mở', formulaGreen:'Cây xanh yêu cầu',
+        formulaMaxFootprintText:'Diện tích đất × Mật độ xây dựng', formulaMaxGfaText:'Diện tích đất × FAR', formulaAvgByFarText:'GFA tối đa ÷ Số tầng', formulaProposedDensityText:'Footprint đề xuất ÷ Diện tích đất × 100', formulaProposedFarText:'GFA đề xuất ÷ Diện tích đất', formulaEnvelopeText:'(Ngang - lùi trái - lùi phải) × (Sâu - lùi trước - lùi sau)', formulaAvgHeightText:'Chiều cao công trình ÷ Số tầng nổi', formulaOpenSpaceText:'Diện tích đất - Footprint đề xuất', formulaGreenText:'Diện tích đất × Tỷ lệ cây xanh',
+        floorUnit:' m²/tầng', space:' ', meter:' m', sqm:' m²', lotUnit:' chỗ',
+        reportNoNotes:'Không có ghi chú.', reportNoteLabel:'Ghi chú:', reportStatus:'Trạng thái kiểm tra sơ bộ',
+        savedAlert:'Đã lưu thông số trong trình duyệt.', importAllWithDiagram:'Đã nhập toàn bộ thông số và cập nhật sơ đồ khu đất/khoảng lùi từ JSON.', importAllNoDiagram:'Đã nhập toàn bộ thông số. Không tìm thấy dữ liệu Site Boundary/Setback Line trong JSON này.', invalidBoundary:'JSON không có dữ liệu Site Boundary hoặc Setback Line hợp lệ.', invalidJson:'File JSON không hợp lệ hoặc cấu trúc dữ liệu chưa đúng.', loadedBoundary:(b,s)=>`Đã load Site Boundary và Setback Line: ${b} điểm boundary, ${s} đường/vùng setback.`
+      },
+      en: {
+        calculateBtn:'Recalculate', languageLabel:'Language', eyebrow:'🏙️ Planning Architecture Calculator', mainTitle:'Architectural Planning Parameter Calculator',
+        lead:'Enter land area, floor area ratio, building density, number of floors, height, and setbacks to calculate maximum footprint, gross floor area, average floor plate, floor height, open space, preliminary compliance warnings, and a quick report.',
+        printBtn:'Export to PDF', exportJsonBtn:'Export Architectural Parameter', exportCsvBtn:'Export to CSV', importJsonLabel:'Import Architectural Parameter', loadBoundaryLabel:'Load Site Boundary and Setback Line',
+        quickSummary:'Quick Summary', landAreaShort:'Land Area', maxGfaShort:'Max GFA', maxFootprintShort:'Max Footprint', statusShort:'Status',
+        footerNote:'Note: this tool is for preliminary calculations only. For official submissions, cross-check building codes, approved 1/500 planning, red-line boundary, construction boundary, and local regulations.',
+        inputTitle:'Input Parameters', inputDesc:'Values are automatically saved in your browser.', requiredNote:'* Red parameters are required / must be checked before calculation.',
+        sectionProject:'Project', sectionPlanning:'Planning Controls', sectionSetback:'Setbacks', sectionProposal:'Proposed Design',
+        projectNameLabel:'Project Name', landAreaLabel:'Land Area (m²)', landWidthLabel:'Site Width (m)', landDepthLabel:'Site Depth (m)', roadWidthLabel:'Road Width / Right of Way (m)',
+        farLabel:'Floor Area Ratio FAR', densityLabel:'Building Density (%)', floorsLabel:'Above-ground Floors', basementsLabel:'Basement Floors', heightLabel:'Building Height (m)', maxHeightLabel:'Maximum Allowed Height (m)',
+        frontSetbackLabel:'Front (m)', rearSetbackLabel:'Rear (m)', leftSetbackLabel:'Left (m)', rightSetbackLabel:'Right (m)',
+        proposedFootprintLabel:'Proposed Footprint (m²)', proposedGfaLabel:'Proposed GFA (m²)', greenRatioLabel:'Required Green Ratio (%)', parkingRatioLabel:'Parking / 100 m² GFA', notesLabel:'Planning Notes',
+        saveBtn:'Save Parameters', resetBtn:'Reset Sample', diagramTitle:'Site Boundary & Setback Diagram', buildingLabel:'BUILDING', usageTitle:'Parameter Usage Ratio',
+        checkTitle:'Preliminary Check', formulaTitle:'Formula & Result Table', tableMetric:'Parameter', tableFormula:'Formula', tableResult:'Result', reportTitle:'Quick Report',
+        siteDiagramHelp:'Use <strong>Load Site Boundary and Setback Line</strong> to import SketchUp JSON containing <strong>site_boundaries</strong> and <strong>setback_lines</strong>.',
+        defaultDiagramHelp:'Showing an automatic diagram from manually entered width, depth, and setback values.',
+        importedDiagramHelp:(b,s,hasFootprint)=>`Site Boundary Diagram: <strong>${b}</strong> boundary points`,
+        front:'Front', rear:'Rear', left:'Left', right:'Right',
+        okStatus:'Preliminarily OK', checkStatus:'Needs Review', failStatus:'Preliminarily Failed',
+        checkDensity:'Building Density', checkFar:'Floor Area Ratio FAR', checkHeight:'Building Height', checkSetback:'Footprint within Buildable Envelope', checkGreen:'Open Space / Green Area', checkDimension:'Site Dimension Check',
+        limit:'limit', effectiveLimit:'effective limit', remaining:'remaining', greenRequired:'green area required', comparedToInput:'compared with input land area',
+        maxGfa:'Max GFA', maxFootprint:'Max Footprint', effectiveFootprint:'Effective Footprint', proposedFar:'Proposed FAR', proposedDensity:'Proposed Density', avgFloorHeight:'Avg. Floor Height', avgFloor:'Avg. Floor / Level', openSpace:'Open Space', parkingEstimate:'Estimated Parking',
+        landFarFormula:'Land area × FAR', densityFormula:'Land area × density', setbackFormula:'Limited by density and setbacks', proposedFarSub:'Proposed GFA / land area', proposedDensitySub:'Proposed footprint / land area', heightFloorSub:'Height / above-ground floors', gfaFloorSub:'Proposed GFA / floors', openSpaceSub:'Land area - footprint', parkingSub:'Based on entered ratio',
+        formulaMaxFootprint:'Maximum Building Footprint', formulaMaxGfa:'Maximum Gross Floor Area', formulaAvgByFar:'Average Floor Area by FAR', formulaProposedDensity:'Proposed Building Density', formulaProposedFar:'Proposed FAR', formulaEnvelope:'Buildable Area after Setbacks', formulaAvgHeight:'Average Floor Height', formulaOpenSpace:'Open Space', formulaGreen:'Required Green Area',
+        formulaMaxFootprintText:'Land area × building density', formulaMaxGfaText:'Land area × FAR', formulaAvgByFarText:'Max GFA ÷ floors', formulaProposedDensityText:'Proposed footprint ÷ land area × 100', formulaProposedFarText:'Proposed GFA ÷ land area', formulaEnvelopeText:'(Width - left setback - right setback) × (Depth - front setback - rear setback)', formulaAvgHeightText:'Building height ÷ above-ground floors', formulaOpenSpaceText:'Land area - proposed footprint', formulaGreenText:'Land area × required green ratio',
+        floorUnit:' m²/floor', space:' ', meter:' m', sqm:' m²', lotUnit:' spaces',
+        reportNoNotes:'No notes.', reportNoteLabel:'Notes:', reportStatus:'Preliminary check status',
+        savedAlert:'Parameters saved in this browser.', importAllWithDiagram:'Imported all parameters and updated the site boundary/setback diagram from JSON.', importAllNoDiagram:'Imported all parameters. No Site Boundary/Setback Line data was found in this JSON.', invalidBoundary:'The JSON does not contain valid Site Boundary or Setback Line data.', invalidJson:'The JSON file is invalid or its data structure is unsupported.', loadedBoundary:(b,s)=>`Loaded Site Boundary and Setback Line: ${b} boundary points, ${s} setback line/area item(s).`
+      }
+    };
+
+    const t = (key, ...args) => {
+      const value = translations[currentLang]?.[key] ?? translations.vi[key] ?? key;
+      return typeof value === 'function' ? value(...args) : value;
+    };
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLang;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (key) el.innerHTML = t(key);
+      });
+      const select = $('languageSelect');
+      if (select) select.value = currentLang;
+      $('diagramHelp').innerHTML = importedDiagram
+        ? t('importedDiagramHelp', importedDiagram.siteBoundary.length, importedDiagram.setbackLines.length, !!importedDiagram.buildingFootprint.length)
+        : t('siteDiagramHelp');
+      localStorage.setItem('planningCalculatorLanguage', currentLang);
+    }
+
+    const sampleDiagramJson = {
+      input: {
+        projectName: 'Dự án nhập từ JSON',
+        landArea: 1000,
+        landWidth: 25,
+        landDepth: 40,
+        roadWidth: 20,
+        far: 5,
+        density: 45,
+        floors: 12,
+        basements: 1,
+        height: 48,
+        maxHeight: 50,
+        frontSetback: 6,
+        rearSetback: 4,
+        leftSetback: 3,
+        rightSetback: 3,
+        proposedFootprint: 420,
+        proposedGfa: 4800,
+        greenRatio: 20,
+        parkingRatio: 1,
+        notes: 'JSON mẫu có siteBoundary và setbackLines để dựng sơ đồ khu đất.'
+      },
+      diagram: {
+        units: 'm',
+        siteBoundary: [[0,0],[25,0],[25,40],[0,40]],
+        setbackLines: [[[3,6],[22,6],[22,36],[3,36],[3,6]]],
+        buildingFootprint: [[4.5,8],[20.5,8],[20.5,34],[4.5,34]],
+        labels: [
+          { text: 'Site Boundary', x: 12.5, y: 2 },
+          { text: 'Setback / Chỉ giới xây dựng', x: 12.5, y: 7.2 },
+          { text: 'Building Footprint', x: 12.5, y: 21 }
+        ]
+      }
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const num = (id) => Number($(id).value || 0);
+    const fmt = (value, suffix = '') => {
+      if (!Number.isFinite(value)) return '—';
+      return new Intl.NumberFormat(currentLang === 'en' ? 'en-US' : 'vi-VN', { maximumFractionDigits: 2 }).format(value) + suffix;
+    };
+    const pct = (value) => fmt(value, '%');
+
+    function readData() {
+      const data = {};
+      for (const id of fieldIds) data[id] = $(id).type === 'number' ? num(id) : $(id).value;
+      data.floors = Math.max(1, Math.round(data.floors || 1));
+      data.basements = Math.max(0, Math.round(data.basements || 0));
+      data.density = Math.min(100, Math.max(0, data.density));
+      data.greenRatio = Math.min(100, Math.max(0, data.greenRatio));
+      if (importedDiagram) data.diagram = importedDiagram;
+      return data;
+    }
+
+    function normalizePoint(point) {
+      if (Array.isArray(point) && point.length >= 2) return { x: Number(point[0]), y: Number(point[1]) };
+      if (point && typeof point === 'object') {
+        const x = point.x ?? point.X ?? point.easting ?? point.lng ?? point.lon ?? point[0];
+        const y = point.y ?? point.Y ?? point.northing ?? point.lat ?? point[1];
+        if (x !== undefined && y !== undefined) return { x: Number(x), y: Number(y) };
+      }
+      return null;
+    }
+
+    function normalizePath(value) {
+      if (!Array.isArray(value)) return [];
+      return value.map(normalizePoint).filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.y));
+    }
+
+    function normalizePaths(value) {
+      if (!Array.isArray(value)) return [];
+      if (value.length === 0) return [];
+      const first = value[0];
+      if (Array.isArray(first) && first.length >= 2 && typeof first[0] === 'number') return [normalizePath(value)];
+      if (first && typeof first === 'object' && ('x' in first || 'X' in first || 'lng' in first || 'lat' in first)) return [normalizePath(value)];
+      return value.map(normalizePath).filter(path => path.length >= 2);
+    }
+
+    function pickFirstObject(...items) {
+      return items.find(item => item && typeof item === 'object');
+    }
+
+    function closePathIfNeeded(path) {
+      if (!path || path.length < 2) return path || [];
+      const a = path[0], b = path[path.length - 1];
+      if (Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.y - b.y) < 1e-9) return path;
+      return [...path, { x: a.x, y: a.y }];
+    }
+
+    function objectVertices(obj) {
+      return normalizePath(obj?.points || obj?.vertices || obj?.face?.vertices || obj);
+    }
+
+    function edgesToPaths(edges) {
+      if (!Array.isArray(edges)) return [];
+      return edges.map(edge => {
+        const a = normalizePoint(edge.start || edge.from || edge.p1 || edge[0]);
+        const b = normalizePoint(edge.end || edge.to || edge.p2 || edge[1]);
+        return a && b ? [a, b] : [];
+      }).filter(path => path.length === 2);
+    }
+
+    function extractSiteBoundaryFromSketchUp(raw) {
+      const items = Array.isArray(raw?.site_boundaries) ? raw.site_boundaries : [];
+      if (!items.length) return [];
+
+      const faceItem = items
+        .filter(item => (item.object_type || '').toLowerCase().includes('site_boundary'))
+        .sort((a, b) => Number(b.area_sqm || 0) - Number(a.area_sqm || 0))[0];
+
+      if (faceItem) {
+        const face = Array.isArray(faceItem.faces) && faceItem.faces.length ? faceItem.faces[0] : null;
+        const facePath = normalizePath(face?.vertices || []);
+        if (facePath.length >= 3) return facePath;
+        const vertexPath = objectVertices(faceItem);
+        if (vertexPath.length >= 3) return vertexPath;
+      }
+
+      const edgePaths = items.flatMap(item => edgesToPaths(item.edges));
+      return stitchSegmentsToPath(edgePaths);
+    }
+
+    function extractSetbackLinesFromSketchUp(raw) {
+      const items = Array.isArray(raw?.setback_lines) ? raw.setback_lines : [];
+      if (!items.length) return [];
+
+      const mainObjects = items.filter(item => {
+        const type = String(item.object_type || '').toLowerCase();
+        return type === 'setback_line' || (Number(item.edge_count || 0) > 1 && Array.isArray(item.edges));
+      });
+      const sourceItems = mainObjects.length ? mainObjects : items;
+
+      const paths = [];
+      sourceItems.forEach(item => {
+        const direct = objectVertices(item);
+        const edgePaths = edgesToPaths(item.edges);
+        if (edgePaths.length) paths.push(...edgePaths);
+        else if (direct.length >= 2) paths.push(direct);
+      });
+
+      return dedupePaths(paths);
+    }
+
+    function dedupePaths(paths) {
+      const seen = new Set();
+      return paths.filter(path => {
+        if (!path || path.length < 2) return false;
+        const key = path.map(p => `${p.x.toFixed(6)},${p.y.toFixed(6)}`).join('|');
+        const rev = [...path].reverse().map(p => `${p.x.toFixed(6)},${p.y.toFixed(6)}`).join('|');
+        if (seen.has(key) || seen.has(rev)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function stitchSegmentsToPath(segments) {
+      if (!segments.length) return [];
+      const key = p => `${p.x.toFixed(6)},${p.y.toFixed(6)}`;
+      const unused = segments.map(seg => seg.map(p => ({ x: p.x, y: p.y })));
+      const path = unused.shift();
+      let changed = true;
+      while (changed && unused.length) {
+        changed = false;
+        for (let i = 0; i < unused.length; i++) {
+          const seg = unused[i];
+          const first = path[0], last = path[path.length - 1];
+          if (key(seg[0]) === key(last)) { path.push(seg[1]); unused.splice(i, 1); changed = true; break; }
+          if (key(seg[1]) === key(last)) { path.push(seg[0]); unused.splice(i, 1); changed = true; break; }
+          if (key(seg[1]) === key(first)) { path.unshift(seg[0]); unused.splice(i, 1); changed = true; break; }
+          if (key(seg[0]) === key(first)) { path.unshift(seg[1]); unused.splice(i, 1); changed = true; break; }
+        }
+      }
+      return path.length >= 3 ? path : [];
+    }
+
+    function updateInputsFromSketchUpJson(raw) {
+      const patch = {};
+      if (raw?.project?.model_name) patch.projectName = raw.project.model_name;
+      if (raw?.summary?.total_site_boundary_area_sqm) patch.landArea = Number(raw.summary.total_site_boundary_area_sqm);
+
+      const site = extractSiteBoundaryFromSketchUp(raw);
+      if (site.length >= 3) {
+        const b = pathBounds([site]);
+        patch.landWidth = +(b.maxX - b.minX).toFixed(3);
+        patch.landDepth = +(b.maxY - b.minY).toFixed(3);
+      }
+      return patch;
+    }
+
+    function normalizeDiagram(raw) {
+      const source = pickFirstObject(raw.diagram, raw.geometry, raw.siteDiagram, raw.planningDiagram, raw) || {};
+      const siteSource = source.siteBoundary || source.site_boundary || source.boundary || source.site || source.landBoundary || source.land_boundary;
+      const setbackSource = source.setbackLines || source.setbackLine || source.setback_lines || source.setback || source.setbacks || source.buildableBoundary || source.buildable_boundary;
+      const buildingSource = source.buildingFootprint || source.building_footprint || source.footprint || source.proposedFootprintPolygon || source.building;
+
+      let siteBoundary = normalizePath(siteSource?.points || siteSource?.vertices || siteSource);
+      let setbackLines = normalizePaths(setbackSource?.points || setbackSource?.vertices || setbackSource);
+      const buildingFootprint = normalizePath(buildingSource?.points || buildingSource?.vertices || buildingSource);
+      const labels = Array.isArray(source.labels) ? source.labels.map(l => ({ text: String(l.text || l.label || ''), x: Number(l.x), y: Number(l.y) })).filter(l => l.text && Number.isFinite(l.x) && Number.isFinite(l.y)) : [];
+
+      // Support the SketchUp export JSON format:
+      // root.site_boundaries[] and root.setback_lines[] with vertices / edges.
+      if (siteBoundary.length < 3 && Array.isArray(raw.site_boundaries)) {
+        siteBoundary = extractSiteBoundaryFromSketchUp(raw);
+      }
+      if (setbackLines.length === 0 && Array.isArray(raw.setback_lines)) {
+        setbackLines = extractSetbackLinesFromSketchUp(raw);
+      }
+
+      if (siteBoundary.length < 3 && raw.input) {
+        const w = Number(raw.input.landWidth || 0);
+        const d = Number(raw.input.landDepth || 0);
+        if (w > 0 && d > 0) siteBoundary = [{x:0,y:0},{x:w,y:0},{x:w,y:d},{x:0,y:d}];
+      }
+
+      if (siteBoundary.length < 3 && setbackLines.length === 0 && buildingFootprint.length === 0) return null;
+      return { units: source.units?.length || source.units?.length === 'meter' ? 'm' : (source.units || source.unit || raw?.units?.length || 'm'), siteBoundary, setbackLines, buildingFootprint, labels };
+    }
+
+    function setData(data, options = {}) {
+      const source = data || {};
+      const input = source.input || source.parameters || source.params || source;
+      importedDiagram = normalizeDiagram(source) || (options.keepDiagram ? importedDiagram : null);
+      const sketchUpPatch = updateInputsFromSketchUpJson(source);
+      const merged = { ...defaultData, ...input, ...sketchUpPatch };
+      for (const id of fieldIds) if ($(id)) $(id).value = merged[id];
+      calculate();
+    }
+
+    function calculateModel(d) {
+      const maxFootprint = d.landArea * d.density / 100;
+      const maxGfa = d.landArea * d.far;
+      const avgFloorAreaByGfa = maxGfa / d.floors;
+      const proposedDensity = d.landArea > 0 ? d.proposedFootprint / d.landArea * 100 : 0;
+      const proposedFar = d.landArea > 0 ? d.proposedGfa / d.landArea : 0;
+      const avgProposedFloor = d.proposedGfa / d.floors;
+      const openSpace = Math.max(0, d.landArea - d.proposedFootprint);
+      const requiredGreen = d.landArea * d.greenRatio / 100;
+      const estimatedParkingLots = Math.ceil(d.proposedGfa / 100 * d.parkingRatio);
+      const averageFloorHeight = d.height / d.floors;
+      const buildableWidth = Math.max(0, d.landWidth - d.leftSetback - d.rightSetback);
+      const buildableDepth = Math.max(0, d.landDepth - d.frontSetback - d.rearSetback);
+      const buildableEnvelopeArea = buildableWidth * buildableDepth;
+      const effectiveFootprintLimit = Math.min(maxFootprint, buildableEnvelopeArea || maxFootprint);
+      const siteRatioFromDimensions = d.landWidth * d.landDepth;
+      const dimensionMismatch = Math.abs(siteRatioFromDimensions - d.landArea);
+
+      const checks = [
+        { key: 'density', ok: proposedDensity <= d.density + 0.0001, label: t('checkDensity'), detail: `${pct(proposedDensity)} / ${t('limit')} ${pct(d.density)}` },
+        { key: 'far', ok: proposedFar <= d.far + 0.0001, label: t('checkFar'), detail: `${fmt(proposedFar)} / ${t('limit')} ${fmt(d.far)}` },
+        { key: 'height', ok: d.maxHeight <= 0 || d.height <= d.maxHeight + 0.0001, label: t('checkHeight'), detail: `${fmt(d.height, t('meter'))} / ${t('limit')} ${fmt(d.maxHeight, t('meter'))}` },
+        { key: 'setback', ok: d.proposedFootprint <= effectiveFootprintLimit + 0.0001, label: t('checkSetback'), detail: `${fmt(d.proposedFootprint, t('sqm'))} / ${t('effectiveLimit')} ${fmt(effectiveFootprintLimit, t('sqm'))}` },
+        { key: 'green', ok: openSpace >= requiredGreen - 0.0001, label: t('checkGreen'), detail: `${fmt(openSpace, t('sqm'))} ${t('remaining')} / ${t('greenRequired')} ${fmt(requiredGreen, t('sqm'))}` },
+        { key: 'dimension', ok: dimensionMismatch <= Math.max(1, d.landArea * 0.03), label: t('checkDimension'), detail: `${t('landWidthLabel').replace(' (m)','')} × ${t('landDepthLabel').replace(' (m)','')} = ${fmt(siteRatioFromDimensions, t('sqm'))} ${t('comparedToInput')} ${fmt(d.landArea, t('sqm'))}` }
+      ];
+
+      const failed = checks.filter(c => !c.ok).length;
+      const status = failed === 0 ? t('okStatus') : failed <= 2 ? t('checkStatus') : t('failStatus');
+      const statusType = failed === 0 ? 'success' : failed <= 2 ? 'warning' : 'danger';
+
+      return { maxFootprint, maxGfa, avgFloorAreaByGfa, proposedDensity, proposedFar, avgProposedFloor, openSpace, requiredGreen, estimatedParkingLots, averageFloorHeight, buildableWidth, buildableDepth, buildableEnvelopeArea, effectiveFootprintLimit, checks, failed, status, statusType };
+    }
+
+    function metric(label, value, sub) {
+      return `<article class="metric-card"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub}</div></article>`;
+    }
+
+    function renderMetrics(d, m) {
+      $('metricsGrid').innerHTML = [
+        metric(t('maxGfa'), fmt(m.maxGfa, t('sqm')), t('landFarFormula')),
+        metric(t('maxFootprint'), fmt(m.maxFootprint, t('sqm')), t('densityFormula')),
+        metric(t('effectiveFootprint'), fmt(m.effectiveFootprintLimit, t('sqm')), t('setbackFormula')),
+        metric(t('proposedFar'), fmt(m.proposedFar), t('proposedFarSub')),
+        metric(t('proposedDensity'), pct(m.proposedDensity), t('proposedDensitySub')),
+        metric(t('avgFloorHeight'), fmt(m.averageFloorHeight, t('meter')), t('heightFloorSub')),
+        metric(t('avgFloor'), fmt(m.avgProposedFloor, t('sqm')), t('gfaFloorSub')),
+        metric(t('openSpace'), fmt(m.openSpace, t('sqm')), t('openSpaceSub')),
+        metric(t('parkingEstimate'), fmt(m.estimatedParkingLots, t('lotUnit')), t('parkingSub'))
+      ].join('');
+    }
+
+    function renderChecks(m) {
+      const badge = $('statusBadge');
+      badge.className = `badge ${m.statusType}`;
+      badge.textContent = m.status;
+      $('quickStatus').textContent = m.status;
+      $('checkList').innerHTML = m.checks.map(c => `<li>${c.ok ? '✅' : '⚠️'} <strong>${c.label}:</strong> ${c.detail}</li>`).join('');
+    }
+
+    function renderBars(d, m) {
+      const bars = [
+        ['FAR', m.proposedFar, d.far, fmt(m.proposedFar) + ' / ' + fmt(d.far)],
+        [t('checkDensity'), m.proposedDensity, d.density, pct(m.proposedDensity) + ' / ' + pct(d.density)],
+        [t('checkHeight'), d.height, d.maxHeight || d.height, fmt(d.height, t('meter')) + ' / ' + fmt(d.maxHeight, t('meter'))],
+        [t('maxFootprintShort'), d.proposedFootprint, m.effectiveFootprintLimit || d.proposedFootprint, fmt(d.proposedFootprint, t('sqm'))]
+      ];
+      $('bars').innerHTML = bars.map(([name, value, limit, label]) => {
+        const ratio = limit > 0 ? Math.min(130, value / limit * 100) : 0;
+        return `<div class="bar-row"><strong>${name}</strong><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100, ratio)}%"></div></div><span>${label}</span></div>`;
+      }).join('');
+    }
+
+    function restoreDefaultDiagramMarkup() {
+      const site = $('siteBox');
+      if (!site.querySelector('#buildBox')) {
+        site.className = 'site-box';
+        site.innerHTML = `
+          <div class="build-box" id="buildBox" data-i18n="buildingLabel">BUILDING</div>
+          <div class="setback-label" id="frontLabel">Trước</div>
+          <div class="setback-label" id="rearLabel">Sau</div>
+          <div class="setback-label" id="leftLabel">Trái</div>
+          <div class="setback-label" id="rightLabel">Phải</div>
+        `;
+      }
+    }
+
+    function pathBounds(paths) {
+      const pts = paths.flat();
+      const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+      return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+    }
+
+    function renderImportedDiagram(diagram) {
+      const site = $('siteBox');
+      const allPaths = [diagram.siteBoundary, ...diagram.setbackLines, diagram.buildingFootprint].filter(path => path && path.length);
+      const fitPaths = [diagram.siteBoundary?.length ? diagram.siteBoundary : null, ...diagram.setbackLines].filter(path => path && path.length);
+      const b = pathBounds(fitPaths.length ? fitPaths : allPaths);
+
+      // Robust "fit to screen" renderer:
+      // Instead of relying on the raw SketchUp coordinates as the SVG viewBox,
+      // we map all points into a fixed landscape canvas with padding. This keeps
+      // the entire site boundary visible for irregular plots, negative coordinates,
+      // and very small/short setback segments.
+      const canvasW = 1000;
+      const canvasH = 620;
+      const pad = 46;
+      const rawW = Math.max(0.0001, b.maxX - b.minX);
+      const rawH = Math.max(0.0001, b.maxY - b.minY);
+      const scale = Math.min((canvasW - pad * 2) / rawW, (canvasH - pad * 2) / rawH);
+      const drawW = rawW * scale;
+      const drawH = rawH * scale;
+      const ox = (canvasW - drawW) / 2;
+      const oy = (canvasH - drawH) / 2;
+      const tx = (p) => ox + (p.x - b.minX) * scale;
+      const ty = (p) => canvasH - (oy + (p.y - b.minY) * scale);
+      const points = (path) => path.map(p => `${tx(p).toFixed(2)},${ty(p).toFixed(2)}`).join(' ');
+      const labelPoint = (p) => ({ x: tx(p), y: ty(p) });
+
+      const sitePoly = diagram.siteBoundary?.length >= 3
+        ? `<polygon class="svg-site" points="${points(diagram.siteBoundary)}"></polygon>`
+        : '';
+      const setbacks = diagram.setbackLines.map(path => path.length >= 3
+        ? `<polygon class="svg-setback" points="${points(path)}"></polygon>`
+        : `<polyline class="svg-setback" points="${points(path)}" fill="none"></polyline>`).join('');
+      const building = diagram.buildingFootprint?.length >= 3
+        ? `<polygon class="svg-building" points="${points(diagram.buildingFootprint)}"></polygon>`
+        : '';
+      const labels = (diagram.labels || []).map(l => {
+        const pt = labelPoint(l);
+        return `<text class="svg-label" x="${pt.x.toFixed(2)}" y="${pt.y.toFixed(2)}" text-anchor="middle">${l.text}</text>`;
+      }).join('');
+
+      site.className = '';
+      site.innerHTML = `
+        <svg class="diagram-svg" viewBox="0 0 ${canvasW} ${canvasH}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Site boundary and setback diagram fitted to full boundary">
+          <rect class="svg-boundary-fit-bg" x="0" y="0" width="${canvasW}" height="${canvasH}"></rect>
+          ${sitePoly}
+          ${setbacks}
+          ${building}
+          ${labels}
+        </svg>
+      `;
+      $('diagramHelp').innerHTML = t('importedDiagramHelp', diagram.siteBoundary.length, diagram.setbackLines.length, !!diagram.buildingFootprint.length);
+    }
+
+    function renderDiagram(d, m) {
+      if (importedDiagram) {
+        renderImportedDiagram(importedDiagram);
+        return;
+      }
+
+      restoreDefaultDiagramMarkup();
+      const site = $('siteBox');
+      const build = $('buildBox');
+      const w = site.clientWidth || 300;
+      const h = site.clientHeight || 230;
+      const sx = d.landWidth > 0 ? w / d.landWidth : 1;
+      const sy = d.landDepth > 0 ? h / d.landDepth : 1;
+      const left = Math.min(w - 40, d.leftSetback * sx);
+      const top = Math.min(h - 36, d.frontSetback * sy);
+      const bw = Math.max(40, Math.min(w - left, m.buildableWidth * sx));
+      const bh = Math.max(36, Math.min(h - top, m.buildableDepth * sy));
+      build.style.left = left + 'px';
+      build.style.top = top + 'px';
+      build.style.width = Math.max(40, bw) + 'px';
+      build.style.height = Math.max(36, bh) + 'px';
+      build.innerHTML = `${fmt(m.buildableWidth, 'm')}<br>×<br>${fmt(m.buildableDepth, 'm')}`;
+      $('frontLabel').style.left = '50%'; $('frontLabel').style.top = '8px'; $('frontLabel').style.transform = 'translateX(-50%)'; $('frontLabel').textContent = `${t('front')} ${fmt(d.frontSetback, 'm')}`;
+      $('rearLabel').style.left = '50%'; $('rearLabel').style.bottom = '8px'; $('rearLabel').style.transform = 'translateX(-50%)'; $('rearLabel').textContent = `${t('rear')} ${fmt(d.rearSetback, 'm')}`;
+      $('leftLabel').style.left = '8px'; $('leftLabel').style.top = '50%'; $('leftLabel').style.transform = 'translateY(-50%)'; $('leftLabel').textContent = `${t('left')} ${fmt(d.leftSetback, 'm')}`;
+      $('rightLabel').style.right = '8px'; $('rightLabel').style.top = '50%'; $('rightLabel').style.transform = 'translateY(-50%)'; $('rightLabel').textContent = `${t('right')} ${fmt(d.rightSetback, 'm')}`;
+      $('diagramHelp').innerHTML = t('defaultDiagramHelp');
+    }
+
+    function renderFormulaRows(d, m) {
+      const rows = [
+        [t('formulaMaxFootprint'), t('formulaMaxFootprintText'), fmt(m.maxFootprint, t('sqm'))],
+        [t('formulaMaxGfa'), t('formulaMaxGfaText'), fmt(m.maxGfa, t('sqm'))],
+        [t('formulaAvgByFar'), t('formulaAvgByFarText'), fmt(m.avgFloorAreaByGfa, t('floorUnit'))],
+        [t('formulaProposedDensity'), t('formulaProposedDensityText'), pct(m.proposedDensity)],
+        [t('formulaProposedFar'), t('formulaProposedFarText'), fmt(m.proposedFar)],
+        [t('formulaEnvelope'), t('formulaEnvelopeText'), fmt(m.buildableEnvelopeArea, t('sqm'))],
+        [t('formulaAvgHeight'), t('formulaAvgHeightText'), fmt(m.averageFloorHeight, t('meter'))],
+        [t('formulaOpenSpace'), t('formulaOpenSpaceText'), fmt(m.openSpace, t('sqm'))],
+        [t('formulaGreen'), t('formulaGreenText'), fmt(m.requiredGreen, t('sqm'))]
+      ];
+      $('formulaRows').innerHTML = rows.map(r => `<tr><td><strong>${r[0]}</strong></td><td class="formula">${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+    }
+
+    function renderReport(d, m) {
+      if (currentLang === 'en') {
+        $('reportText').innerHTML = `
+          <p><strong>${d.projectName}</strong> has a land area of <strong>${fmt(d.landArea, t('sqm'))}</strong>, with a proposed scale of <strong>${d.floors} above-ground floors</strong> and <strong>${d.basements} basement floor(s)</strong>.</p>
+          <p>With FAR <strong>${fmt(d.far)}</strong> and building density <strong>${pct(d.density)}</strong>, the maximum GFA is <strong>${fmt(m.maxGfa, t('sqm'))}</strong>, and the maximum footprint by density is <strong>${fmt(m.maxFootprint, t('sqm'))}</strong>. After considering setbacks, the preliminary effective footprint is <strong>${fmt(m.effectiveFootprintLimit, t('sqm'))}</strong>.</p>
+          <p>The current proposal has GFA <strong>${fmt(d.proposedGfa, t('sqm'))}</strong>, footprint <strong>${fmt(d.proposedFootprint, t('sqm'))}</strong>, proposed FAR <strong>${fmt(m.proposedFar)}</strong>, and proposed density <strong>${pct(m.proposedDensity)}</strong>. ${t('reportStatus')}: <strong>${m.status}</strong>.</p>
+          <p><strong>${t('reportNoteLabel')}</strong> ${d.notes || t('reportNoNotes')}</p>
+        `;
+        return;
+      }
+      $('reportText').innerHTML = `
+        <p><strong>${d.projectName}</strong> có diện tích đất <strong>${fmt(d.landArea, t('sqm'))}</strong>, quy mô đề xuất <strong>${d.floors} tầng nổi</strong> và <strong>${d.basements} tầng hầm</strong>.</p>
+        <p>Với FAR <strong>${fmt(d.far)}</strong> và mật độ xây dựng <strong>${pct(d.density)}</strong>, tổng diện tích sàn tối đa là <strong>${fmt(m.maxGfa, t('sqm'))}</strong>, diện tích xây dựng tối đa theo mật độ là <strong>${fmt(m.maxFootprint, t('sqm'))}</strong>. Sau khi xét khoảng lùi, footprint hiệu dụng sơ bộ là <strong>${fmt(m.effectiveFootprintLimit, t('sqm'))}</strong>.</p>
+        <p>Phương án đang nhập có GFA <strong>${fmt(d.proposedGfa, t('sqm'))}</strong>, footprint <strong>${fmt(d.proposedFootprint, t('sqm'))}</strong>, FAR đề xuất <strong>${fmt(m.proposedFar)}</strong> và mật độ đề xuất <strong>${pct(m.proposedDensity)}</strong>. ${t('reportStatus')}: <strong>${m.status}</strong>.</p>
+        <p><strong>${t('reportNoteLabel')}</strong> ${d.notes || t('reportNoNotes')}</p>
+      `;
+    }
+
+    function calculate() {
+      const d = readData();
+      const m = calculateModel(d);
+      renderMetrics(d, m);
+      renderChecks(m);
+      renderBars(d, m);
+      renderDiagram(d, m);
+      renderFormulaRows(d, m);
+      renderReport(d, m);
+      $('quickLand').textContent = fmt(d.landArea, t('sqm'));
+      $('quickGfa').textContent = fmt(m.maxGfa, t('sqm'));
+      $('quickFootprint').textContent = fmt(m.maxFootprint, t('sqm'));
+      localStorage.setItem('planningCalculatorData', JSON.stringify(d));
+      window.currentExport = { input: d, diagram: importedDiagram, result: m, exportedAt: new Date().toISOString() };
+    }
+
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCsv() {
+      const exp = window.currentExport || { input: readData(), result: calculateModel(readData()) };
+      const rows = [
+        ['Group','Key','Value'],
+        ...Object.entries(exp.input).map(([k,v]) => ['Input', k, String(v).replaceAll('\n',' ')]),
+        ...Object.entries(exp.result).filter(([k,v]) => typeof v !== 'object').map(([k,v]) => ['Result', k, v])
+      ];
+      download('planning-architecture-calculation.csv', rows.map(r => r.map(x => `"${String(x).replaceAll('"','""')}"`).join(',')).join('\n'), 'text/csv;charset=utf-8');
+    }
+
+    function exportWholeParametersJson() {
+      calculate();
+      const input = readData();
+      const result = calculateModel(input);
+      const exportData = {
+        schema: 'planning-architecture-calculator/whole-parameters-v1',
+        exportedAt: new Date().toISOString(),
+        parameters: { ...input },
+        input: { ...input },
+        diagram: importedDiagram || input.diagram || null,
+        result
+      };
+      delete exportData.parameters.diagram;
+      delete exportData.input.diagram;
+      download('planning-architecture-whole-parameters.json', JSON.stringify(exportData, null, 2), 'application/json;charset=utf-8');
+    }
+
+    function importWholeParametersJson(json) {
+      setData(json);
+      const hasDiagram = !!importedDiagram;
+      alert(hasDiagram ? t('importAllWithDiagram') : t('importAllNoDiagram'));
+    }
+
+    function loadSiteBoundarySetbackJson(json) {
+      const nextDiagram = normalizeDiagram(json);
+      if (!nextDiagram || (nextDiagram.siteBoundary.length < 3 && nextDiagram.setbackLines.length === 0)) {
+        alert(t('invalidBoundary'));
+        return;
+      }
+      importedDiagram = nextDiagram;
+
+      const patch = updateInputsFromSketchUpJson(json);
+      for (const [key, value] of Object.entries(patch)) {
+        if ($(key) && value !== undefined && value !== null && value !== '') $(key).value = value;
+      }
+
+      calculate();
+      alert(t('loadedBoundary', nextDiagram.siteBoundary.length, nextDiagram.setbackLines.length));
+    }
+
+    async function readJsonFileFromInput(event, handler) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const json = JSON.parse(await file.text());
+        handler(json);
+      } catch (err) {
+        console.error(err);
+        alert(t('invalidJson'));
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    function bindEvents() {
+      for (const id of fieldIds) $(id).addEventListener('input', calculate);
+      $('calculateBtn').addEventListener('click', calculate);
+      $('languageSelect').addEventListener('change', (e) => { currentLang = e.target.value; applyLanguage(); calculate(); });
+      $('saveBtn').addEventListener('click', () => { calculate(); alert(t('savedAlert')); });
+      $('printBtn').addEventListener('click', () => window.print());
+      $('exportJsonBtn').addEventListener('click', exportWholeParametersJson);
+      $('exportCsvBtn').addEventListener('click', exportCsv);
+      $('resetBtn').addEventListener('click', () => { localStorage.removeItem('planningCalculatorData'); importedDiagram = null; setData(defaultData); });
+      $('importFile').addEventListener('change', (e) => readJsonFileFromInput(e, importWholeParametersJson));
+      $('diagramFile').addEventListener('change', (e) => readJsonFileFromInput(e, loadSiteBoundarySetbackJson));
+      window.addEventListener('resize', calculate);
+    }
+
+    bindEvents();
+    applyLanguage();
+    const saved = localStorage.getItem('planningCalculatorData');
+    setData(saved ? JSON.parse(saved) : defaultData);
+  </script>
+</body>
+</html>

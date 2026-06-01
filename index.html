@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planning Architecture Calculator v9 | Bilingual Landscape Dashboard</title>
+  <title>Planning Architecture Calculator v11 | Bilingual Landscape Dashboard</title>
   <meta name="description" content="Web app tính toán các chỉ tiêu quy hoạch kiến trúc: diện tích đất, FAR, mật độ xây dựng, số tầng, chiều cao, khoảng lùi, diện tích xây dựng, GFA, diện tích sàn trung bình và kiểm tra sơ bộ." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,6 +25,16 @@
       --radius: 22px;
       --radius-sm: 14px;
       --gap: 18px;
+    }
+
+
+    /* Force Roboto across the entire application, including controls, buttons, tables, SVG text and report areas */
+    *, *::before, *::after {
+      font-family: "Roboto", Arial, sans-serif !important;
+    }
+
+    input, select, textarea, button, table, th, td, pre, code, .formula, #reportText, svg text {
+      font-family: "Roboto", Arial, sans-serif !important;
     }
 
     * { box-sizing: border-box; }
@@ -238,7 +248,7 @@
     .svg-site { fill: rgba(15,118,110,.07); stroke: #344054; stroke-width: 4.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
     .svg-setback { fill: rgba(217,45,32,.08); stroke: #d92d20; stroke-width: 2.2; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
     .svg-building { fill: rgba(15,118,110,.72); stroke: #115e59; stroke-width: 2.4; vector-effect: non-scaling-stroke; }
-    .svg-label { font: 700 11px Roboto, system-ui, sans-serif; fill: #344054; paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 3px; }
+    .svg-label { font: 700 11px "Roboto", Arial, sans-serif; font-family: "Roboto", Arial, sans-serif !important; fill: #344054; paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 3px; }
     .bar-row { display: grid; grid-template-columns: 110px 1fr 80px; gap: 10px; align-items: center; margin: 13px 0; font-size: 13px; }
     .bar-track { height: 12px; background: #edf2f7; border-radius: 999px; overflow: hidden; }
     .bar-fill { height: 100%; background: var(--primary); border-radius: 999px; width: 0%; transition: width .2s ease; }
@@ -247,9 +257,46 @@
     th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 14px; }
     th { background: #f8fafc; color: #344054; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
     tr:last-child td { border-bottom: 0; }
-    .formula { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; color: #475467; }
+    .formula { font-family: "Roboto", Arial, sans-serif !important; font-size: 12px; color: #475467; }
 
     .footer-note { color: var(--muted); font-size: 13px; margin-top: 16px; }
+
+    .contact-card {
+      display: block;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, #ecfdf3 0%, #ffffff 70%);
+      border: 2px solid rgba(15,118,110,.32);
+      border-left: 7px solid var(--primary);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 12px 26px rgba(15,118,110,.12);
+      margin: 10px 0 14px;
+    }
+    .contact-info { min-width: 0; }
+    .contact-title {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--primary-dark);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+    .contact-name {
+      font-size: clamp(18px, 1.4vw, 22px);
+      font-weight: 950;
+      color: var(--text);
+      margin-bottom: 7px;
+      letter-spacing: -0.02em;
+    }
+    .contact-line {
+      font-size: 14px;
+      color: #344054;
+      margin: 4px 0;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    .contact-line strong { color: var(--text); }
+    .contact-line a { color: var(--primary-dark); font-weight: 900; text-decoration: none; }
+    .contact-line a:hover { text-decoration: underline; }
 
     @media (max-width: 980px) {
       .hero, .layout, .viz { grid-template-columns: 1fr; }
@@ -355,6 +402,16 @@
       .mini-stat span { font-size: 10px; margin-bottom: 2px; }
       .mini-stat strong { font-size: 14px; }
       .footer-note { display: none; }
+
+      .contact-card {
+        padding: 9px 11px;
+        border-radius: 10px;
+        margin: 6px 0 8px;
+        border-left-width: 6px;
+      }
+      .contact-title { font-size: 9.5px; margin-bottom: 3px; }
+      .contact-name { font-size: 13px; margin-bottom: 2px; }
+      .contact-line { font-size: 10.5px; line-height: 1.2; margin: 1px 0; }
 
       .layout {
         height: 100%;
@@ -494,7 +551,7 @@
     <section class="hero">
       <div class="hero-card">
         <div class="eyebrow" data-i18n="eyebrow">🏙️ Planning Architecture Calculator</div>
-        <h1 data-i18n="mainTitle">Tính toán Chỉ tiêu Quy hoạch Kiến trúc</h1>
+        <h1 data-i18n="mainTitle">Tính chỉ tiêu quy hoạch kiến trúc</h1>
         <p class="lead" data-i18n="lead">Nhập diện tích đất, hệ số sử dụng đất, mật độ xây dựng, số tầng, chiều cao và khoảng lùi để tự động tính: diện tích xây dựng tối đa, tổng diện tích sàn, diện tích sàn trung bình, chiều cao tầng, diện tích mở, cảnh báo vượt chỉ tiêu và báo cáo sơ bộ.</p>
         <div class="toolbar">
           <button class="btn-primary" id="calculateBtn" data-i18n="calculateBtn">Tính toán lại</button>
@@ -510,6 +567,14 @@
       </div>
       <aside class="summary-box hero-card">
         <p class="summary-title" data-i18n="quickSummary">Tóm tắt nhanh</p>
+        <div class="contact-card" aria-label="Contact information">
+          <div class="contact-info">
+            <div class="contact-title" data-i18n="contactTitle">Liên hệ</div>
+            <div class="contact-name">Hiếu Nguyễn</div>
+            <div class="contact-line"><strong data-i18n="contactPhoneLabel">Điện thoại:</strong> <a href="tel:0902689668">0902 68 96 68</a></div>
+            <div class="contact-line"><strong>Email:</strong> <a href="mailto:tkhnpartners@gmail.com">tkhnpartners@gmail.com</a></div>
+          </div>
+        </div>
         <div class="summary-grid">
           <div class="mini-stat"><span data-i18n="landAreaShort">Diện tích đất</span><strong id="quickLand">—</strong></div>
           <div class="mini-stat"><span data-i18n="maxGfaShort">GFA tối đa</span><strong id="quickGfa">—</strong></div>
@@ -689,10 +754,10 @@
 
     const translations = {
       vi: {
-        calculateBtn:'Tính toán lại', languageLabel:'Ngôn ngữ', eyebrow:'🏙️ Planning Architecture Calculator', mainTitle:'Tính toán Chỉ tiêu Quy hoạch Kiến trúc',
+        calculateBtn:'Tính toán lại', languageLabel:'Ngôn ngữ', eyebrow:'🏙️ Planning Architecture Calculator', mainTitle:'Tính chỉ tiêu quy hoạch kiến trúc',
         lead:'Nhập diện tích đất, hệ số sử dụng đất, mật độ xây dựng, số tầng, chiều cao và khoảng lùi để tự động tính: diện tích xây dựng tối đa, tổng diện tích sàn, diện tích sàn trung bình, chiều cao tầng, diện tích mở, cảnh báo vượt chỉ tiêu và báo cáo sơ bộ.',
         printBtn:'Export to PDF', exportJsonBtn:'Export Architectural Parameter', exportCsvBtn:'Export to CSV', importJsonLabel:'Import Architectural Parameter', loadBoundaryLabel:'Load Site Boundary and Setback Line',
-        quickSummary:'Tóm tắt nhanh', landAreaShort:'Diện tích đất', maxGfaShort:'GFA tối đa', maxFootprintShort:'Footprint tối đa', statusShort:'Trạng thái',
+        quickSummary:'Tóm tắt nhanh', contactTitle:'Liên hệ', contactPhoneLabel:'Điện thoại:', landAreaShort:'Diện tích đất', maxGfaShort:'GFA tối đa', maxFootprintShort:'Footprint tối đa', statusShort:'Trạng thái',
         footerNote:'Lưu ý: công cụ này phục vụ tính toán sơ bộ. Khi nộp hồ sơ pháp lý, cần đối chiếu quy chuẩn, quy hoạch 1/500, chỉ giới đường đỏ, chỉ giới xây dựng và văn bản địa phương.',
         inputTitle:'Thông số đầu vào', inputDesc:'Các giá trị được lưu tự động trong trình duyệt của bạn.', requiredNote:'* Các thông số màu đỏ là thông tin cần nhập / cần kiểm tra trước khi tính toán.',
         sectionProject:'Dự án', sectionPlanning:'Chỉ tiêu quy hoạch', sectionSetback:'Khoảng lùi', sectionProposal:'Thiết kế đề xuất',
@@ -721,7 +786,7 @@
         calculateBtn:'Recalculate', languageLabel:'Language', eyebrow:'🏙️ Planning Architecture Calculator', mainTitle:'Architectural Planning Parameter Calculator',
         lead:'Enter land area, floor area ratio, building density, number of floors, height, and setbacks to calculate maximum footprint, gross floor area, average floor plate, floor height, open space, preliminary compliance warnings, and a quick report.',
         printBtn:'Export to PDF', exportJsonBtn:'Export Architectural Parameter', exportCsvBtn:'Export to CSV', importJsonLabel:'Import Architectural Parameter', loadBoundaryLabel:'Load Site Boundary and Setback Line',
-        quickSummary:'Quick Summary', landAreaShort:'Land Area', maxGfaShort:'Max GFA', maxFootprintShort:'Max Footprint', statusShort:'Status',
+        quickSummary:'Quick Summary', contactTitle:'Contact', contactPhoneLabel:'Phone:', landAreaShort:'Land Area', maxGfaShort:'Max GFA', maxFootprintShort:'Max Footprint', statusShort:'Status',
         footerNote:'Note: this tool is for preliminary calculations only. For official submissions, cross-check building codes, approved 1/500 planning, red-line boundary, construction boundary, and local regulations.',
         inputTitle:'Input Parameters', inputDesc:'Values are automatically saved in your browser.', requiredNote:'* Red parameters are required / must be checked before calculation.',
         sectionProject:'Project', sectionPlanning:'Planning Controls', sectionSetback:'Setbacks', sectionProposal:'Proposed Design',
